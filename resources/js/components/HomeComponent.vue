@@ -5,7 +5,11 @@
         <div class="main" v-if="!recordInSession">
             <div>
                 <div class="breadcrumb">
-                    <p>Snapbyte > My Recordings</p>
+                    <p>
+                        Snapbyte
+                        <i class="fa fa-angle-right" aria-hidden="true"></i> My
+                        Recordings
+                    </p>
                 </div>
                 <div class="headingContent">
                     <h1 class="title">
@@ -61,11 +65,16 @@
                                 :key="recording.id"
                             >
                                 <td>
-                                    <img
-                                        :src="'/img/' + recording.imageUrl"
-                                        class="recordImg"
-                                        alt="lake recordings"
-                                    />
+                                    <div class="vidPreview">
+                                        <img
+                                            :src="'/img/' + recording.imageUrl"
+                                            class="recordImg"
+                                            alt="lake recordings"
+                                        />
+                                        <p class="duration">
+                                            {{ recording.duration }}
+                                        </p>
+                                    </div>
                                 </td>
                                 <td>
                                     <p class="m-0 title">
@@ -78,7 +87,7 @@
                                         if the user has added it
                                     </p>
                                 </td>
-                                <td>{{ recording.views }}</td>
+                                <td>{{ formatViews(recording.views) }}</td>
                                 <td>{{ recording.size }}</td>
                                 <td>
                                     {{ moment(recording.updated_at).fromNow() }}
@@ -171,7 +180,6 @@
     import recordings from "../../recordings";
     import moment from "moment";
 
-    let mediaRecorder;
     export default {
         data() {
             return {
@@ -202,9 +210,10 @@
                 this.validateData();
                 if (!this.projectError && !this.peripError) {
                     // Run the permission
-                    navigator.mediaDevices
+                    this.audio || this.mic ? navigator.mediaDevices
                         .getUserMedia({ audio: this.mic, video: this.camera })
-                        .then(this.handleSuccess);
+                        .then(this.handleSuccess) : null;
+                    this.screen ? this.startCapture() : null;
                     this.recordInSession = true;
                     modal.style.display = "none";
                     let body = document.getElementById("rootBody");
@@ -213,6 +222,19 @@
                           (body.style.height = "100%"))
                         : null;
                 }
+            },
+            async startCapture(displayMediaOptions) {
+                let captureStream = null;
+
+                try {
+                    captureStream =
+                        await navigator.mediaDevices.getDisplayMedia(
+                            displayMediaOptions
+                        );
+                } catch (err) {
+                    console.error(`Error: ${err}`);
+                }
+                return captureStream;
             },
             validateData() {
                 this.projectError = "";
@@ -227,6 +249,17 @@
                 ) {
                     this.peripError = "Please select one or two peripherals to use";
                 }
+            },
+            formatViews(views) {
+                return Math.abs(views) > 999 && Math.abs(views) < 1000000
+                    ? Math.sign(views) * (Math.abs(views) / 1000).toFixed(1) + "k"
+                    : Math.abs(views) > 1000000 && Math.abs(views) < 1000000000
+                    ? Math.sign(views) * (Math.abs(views) / 1000000).toFixed(1) +
+                      "M"
+                    : Math.abs(views) > 1000000000
+                    ? Math.sign(views) * (Math.abs(views) / 1000000000).toFixed(1) +
+                      "B"
+                    : Math.sign(views) * Math.abs(views);
             },
         },
         mounted() {
@@ -421,5 +454,20 @@
         .content .breadcrumb {
             padding-left: 20px;
         }
+    }
+    .vidPreview {
+        position: relative;
+        text-align: center;
+        color: white;
+    }
+    .duration {
+        position: absolute;
+        bottom: -2px;
+        right: 10px;
+        background-color: #000;
+        padding-left: 5px;
+        padding-right: 5px;
+        font-size: 0.8em;
+        border-radius: 1px;
     }
 </style>
